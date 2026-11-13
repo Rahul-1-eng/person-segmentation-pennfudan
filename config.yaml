@@ -1,0 +1,31 @@
+seed: 20261103
+data_root: data/PennFudanPed
+split_file: artifacts/splits.json
+image_size: 256
+resize: squash
+batch_size: 8
+epochs: 100
+learning_rate: 0.0003
+weight_decay: 0.00001
+scheduler: cosine
+num_workers: 0
+train_fraction: 0.6
+validation_fraction: 0.2
+test_fraction: 0.2
+device: auto
+threshold: 0.5
+tta: false
+pretrained: true
+distractor_probability: 0.3
+checkpoint_dir: artifacts
+aug:
+  flip: 0.5
+  affine: 0.7
+  scale_min: 0.6
+  scale_max: 1.4
+  rotate: 10
+  translate: 0.1
+  color: 0.5
+  color_strength: 0.2
+  blur: 0.2
+  noise: 0.2
