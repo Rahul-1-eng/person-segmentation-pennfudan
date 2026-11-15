@@ -1,6 +1,6 @@
 # Binary Person Segmentation on Penn-Fudan
 
-**Live project website:** this repository also contains a hosted showcase site with a live segmentation demo (`backend/`, `frontend/`).
+**Live project website:** https://segment-people.emergent.host — a hosted showcase site with a live segmentation demo (`backend/`, `frontend/`).
 
 **Final deliverables** are under `deliverables/`:
 
