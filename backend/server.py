@@ -11,7 +11,10 @@ from PIL import Image
 import cv2
 import torch
 import torchvision
-from torchvision.models.segmentation import deeplabv3_resnet50, DeepLabV3_ResNet50_Weights
+from torchvision.models.segmentation import (
+    deeplabv3_resnet50,
+    DeepLabV3_ResNet50_Weights,
+)
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -30,6 +33,7 @@ with open(DATA_PATH) as f:
 MODEL_META = "DeepLabV3-ResNet50, COCO-pretrained, person class (zero-shot)"
 
 app = FastAPI(title="Person Segmentation Showcase")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,11 +47,13 @@ _model = None
 
 def load_model():
     global _model
+
     if _model is None:
-        w = DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1
-        m = deeplabv3_resnet50(weights=w)
-        m.eval()
-        _model = (m, w)
+        weights = DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1
+        model = deeplabv3_resnet50(weights=weights)
+        model.eval()
+        _model = (model, weights)
+
     return _model
 
 
@@ -55,9 +61,25 @@ mongo = AsyncIOMotorClient(MONGO_URL)
 db = mongo[DB_NAME]
 
 
+@app.on_event("startup")
+async def preload_model():
+    # Load the model before users submit their first image.
+    await asyncio.to_thread(load_model)
+
+
+@app.get("/health")
+async def platform_health():
+    # The hosting health check requests /health.
+    return {"status": "ok"}
+
+
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "torch": torch.__version__, "model_loaded": _model is not None}
+    return {
+        "status": "ok",
+        "torch": torch.__version__,
+        "model_loaded": _model is not None,
+    }
 
 
 @app.get("/api/summary")
@@ -68,73 +90,141 @@ async def summary():
 
 
 def _segment_sync(img_bytes: bytes):
-    m, w = load_model()
-    pil = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-    W0, H0 = pil.size
-    scale = 640.0 / max(W0, H0)
+    model, weights = load_model()
+
+    image = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+    width, height = image.size
+    scale = 640.0 / max(width, height)
+
     if scale < 1:
-        pil = pil.resize((int(W0 * scale), int(H0 * scale)), Image.BILINEAR)
-    t = torchvision.transforms.functional.pil_to_tensor(pil).float() / 255.0
-    t = torchvision.transforms.functional.normalize(t, mean=w.transforms().mean, std=w.transforms().std)
-    t0 = time.perf_counter()
+        image = image.resize(
+            (int(width * scale), int(height * scale)),
+            Image.BILINEAR,
+        )
+
+    tensor = torchvision.transforms.functional.pil_to_tensor(image).float() / 255.0
+    tensor = torchvision.transforms.functional.normalize(
+        tensor,
+        mean=weights.transforms().mean,
+        std=weights.transforms().std,
+    )
+
+    start_time = time.perf_counter()
+
     with torch.no_grad():
-        out = m(t.unsqueeze(0))["out"][0]
-    ms = (time.perf_counter() - t0) * 1000
+        output = model(tensor.unsqueeze(0))["out"][0]
+
+    inference_ms = (time.perf_counter() - start_time) * 1000
+
     try:
-        person = int(w.meta["categories"].index("person"))
+        person_class = int(weights.meta["categories"].index("person"))
     except Exception:
-        person = 15
-    mask = out.argmax(0).numpy().astype(np.uint8)
-    mask = ((mask == person) * 255).astype(np.uint8)
-    orig = cv2.cvtColor(np.array(pil), cv2.COLOR_RGB2BGR)
-    overlay_bgr = orig.copy()
-    blend = cv2.addWeighted(orig, 0.45, np.full_like(orig, (0, 0, 255)), 0.55, 0)
-    overlay_bgr[mask > 0] = blend[mask > 0]
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.drawContours(overlay_bgr, contours, -1, (60, 220, 255), 2)
-    ok, png = cv2.imencode(".png", overlay_bgr)
-    if not ok:
-        raise RuntimeError("encode failed")
-    b64 = base64.b64encode(png.tobytes()).decode()
-    pct = float((mask > 0).mean()) * 100
-    return b64, pct, ms, [pil.width, pil.height], int(out.shape[0])
+        person_class = 15
+
+    mask = output.argmax(0).numpy().astype(np.uint8)
+    mask = ((mask == person_class) * 255).astype(np.uint8)
+
+    original = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    overlay = original.copy()
+    blend = cv2.addWeighted(
+        original,
+        0.45,
+        np.full_like(original, (0, 0, 255)),
+        0.55,
+        0,
+    )
+    overlay[mask > 0] = blend[mask > 0]
+
+    contours, _ = cv2.findContours(
+        mask,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE,
+    )
+    cv2.drawContours(overlay, contours, -1, (60, 220, 255), 2)
+
+    success, png = cv2.imencode(".png", overlay)
+    if not success:
+        raise RuntimeError("Could not encode the segmented image")
+
+    image_base64 = base64.b64encode(png.tobytes()).decode()
+    person_percentage = float((mask > 0).mean()) * 100
+
+    return (
+        image_base64,
+        person_percentage,
+        inference_ms,
+        [image.width, image.height],
+        int(output.shape[0]),
+    )
 
 
 @app.post("/api/segment")
 async def segment(file: UploadFile = File(...)):
-    img = await file.read()
-    if len(img) > 8 * 1024 * 1024:
-        raise HTTPException(413, "Image larger than 8 MB")
+    image_bytes = await file.read()
+
+    if len(image_bytes) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image larger than 8 MB")
+
     try:
-        b64, pct, ms, size, classes = await asyncio.to_thread(_segment_sync, img)
+        (
+            image_base64,
+            person_percentage,
+            inference_ms,
+            image_size,
+            classes,
+        ) = await asyncio.to_thread(_segment_sync, image_bytes)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(500, f"Segmentation failed: {e}")
-    await db.demo_runs.insert_one({
-        "filename": file.filename,
-        "person_pct": pct,
-        "ms": ms,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
-    return JSONResponse({
-        "overlay_png_base64": b64,
-        "person_pixel_pct": round(pct, 2),
-        "inference_ms": round(ms, 1),
-        "image_size": size,
-        "model": MODEL_META,
-        "note": "Zero-shot DeepLabV3-ResNet50 on the COCO person class: the same pretrained reference used in the study (mean per-image IoU 0.7567 on Penn-Fudan).",
-    })
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Segmentation failed: {error}",
+        )
+
+    await db.demo_runs.insert_one(
+        {
+            "filename": file.filename,
+            "person_pct": person_percentage,
+            "ms": inference_ms,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+
+    return JSONResponse(
+        {
+            "overlay_png_base64": image_base64,
+            "person_pixel_pct": round(person_percentage, 2),
+            "inference_ms": round(inference_ms, 1),
+            "image_size": image_size,
+            "model": MODEL_META,
+            "note": (
+                "Zero-shot DeepLabV3-ResNet50 on the COCO person class: "
+                "the same pretrained reference used in the study "
+                "(mean per-image IoU 0.7567 on Penn-Fudan)."
+            ),
+        }
+    )
 
 
 @app.get("/api/demo_stats")
 async def demo_stats():
-    n = await db.demo_runs.count_documents({})
-    agg = await db.demo_runs.aggregate([
-        {"$group": {"_id": None, "avg_ms": {"$avg": "$ms"}, "avg_pct": {"$avg": "$person_pct"}}}
-    ]).to_list(1)
+    runs = await db.demo_runs.count_documents({})
+    aggregate = await db.demo_runs.aggregate(
+        [
+            {
+                "$group": {
+                    "_id": None,
+                    "avg_ms": {"$avg": "$ms"},
+                    "avg_pct": {"$avg": "$person_pct"},
+                }
+            }
+        ]
+    ).to_list(1)
+
     return {
-        "runs": n,
-        "avg_ms": round(agg[0]["avg_ms"], 1) if agg else None,
-        "avg_person_pct": round(agg[0]["avg_pct"], 2) if agg else None,
+        "runs": runs,
+        "avg_ms": round(aggregate[0]["avg_ms"], 1) if aggregate else None,
+        "avg_person_pct": (
+            round(aggregate[0]["avg_pct"], 2) if aggregate else None
+        ),
     }
