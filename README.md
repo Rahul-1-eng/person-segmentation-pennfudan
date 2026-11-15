@@ -1,5 +1,14 @@
 # Binary Person Segmentation on Penn-Fudan
 
+**Live project website:** this repository also contains a hosted showcase site with a live segmentation demo (`backend/`, `frontend/`).
+
+**Final deliverables** are under `deliverables/`:
+
+- `report/` - camera-ready project report (PDF + editable DOCX), Appendix A holds the public code link
+- `poster/` - poster in three formats: editable PPTX, LaTeX source (+ compiled PDF) and high-resolution PNG
+- `explainer/` - a plain-language walkthrough of the whole project (PDF + DOCX)
+- `generators/` - the Python scripts that regenerate the report, explainer and poster from `artifacts/`
+
 Penn-Fudan Pedestrian dataset, 170 images. All person instances are merged into one foreground mask. Reflections, mirror images and shadows are treated as background (assumption, stated in the problem definition).
 
 ## Experiments

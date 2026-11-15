@@ -6,3 +6,9 @@ __pycache__/
 data/PennFudanPed/
 *.pt
 *.zip
+node_modules/
+frontend/build/
+work/
+.emergent/
+.env
+design_guidelines.json

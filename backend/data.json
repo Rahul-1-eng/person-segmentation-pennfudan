@@ -1,0 +1,51 @@
+{
+  "github": "https://github.com/Rahul-1-eng/person-segmentation-pennfudan",
+  "headline": {
+    "best_model": "DeepLabV3 fine-tuned",
+    "best_mean_iou": 0.7973,
+    "encoder_gain": 0.0736,
+    "encoder_gain_ci": [0.05, 0.0982],
+    "aug_gain": 0.0271,
+    "aug_gain_ci": [0.0086, 0.0446],
+    "fp_before": 0.1314,
+    "fp_after": 0.0273,
+    "images": 170,
+    "runs": 27,
+    "seeds": 3,
+    "split": [102, 34, 34]
+  },
+  "results": [
+    {"model": "pixel random forest", "val_iou": "0.2326", "pooled": 0.2645, "mean_iou": 0.2713, "mean_iou_std": 0.0, "fp_d": null, "params": "-", "kind": "trivial"},
+    {"model": "U-Net baseline", "val_iou": "0.6974 ± 0.0158", "pooled": 0.6564, "mean_iou": 0.6893, "mean_iou_std": 0.0146, "fp_d": 0.1465, "params": "7.76 M", "kind": "scratch"},
+    {"model": "U-Net + mild aug.", "val_iou": "0.7618 ± 0.0139", "pooled": 0.6831, "mean_iou": 0.7164, "mean_iou_std": 0.0015, "fp_d": 0.1470, "params": "7.76 M", "kind": "scratch"},
+    {"model": "U-Net + strong aug.", "val_iou": "0.7544 ± 0.0168", "pooled": 0.6888, "mean_iou": 0.7159, "mean_iou_std": 0.005, "fp_d": 0.1787, "params": "7.76 M", "kind": "scratch"},
+    {"model": "U-Net + BCE+Dice", "val_iou": "0.7641 ± 0.0121", "pooled": 0.6965, "mean_iou": 0.7252, "mean_iou_std": 0.0047, "fp_d": 0.1408, "params": "7.76 M", "kind": "scratch"},
+    {"model": "U-Net + distractors", "val_iou": "0.7539 ± 0.0096", "pooled": 0.6828, "mean_iou": 0.7138, "mean_iou_std": 0.0038, "fp_d": 0.1426, "params": "7.76 M", "kind": "scratch"},
+    {"model": "ResNet34-encoder U-Net", "val_iou": "0.8447 ± 0.0028", "pooled": 0.7695, "mean_iou": 0.7895, "mean_iou_std": 0.0094, "fp_d": 0.1314, "params": "24.52 M", "kind": "pretrained"},
+    {"model": "ResNet34 U-Net + distractors", "val_iou": "0.8456 ± 0.0019", "pooled": 0.7668, "mean_iou": 0.7903, "mean_iou_std": 0.0052, "fp_d": 0.0273, "params": "24.52 M", "kind": "pretrained"},
+    {"model": "DeepLabV3 zero-shot", "val_iou": "0.7565", "pooled": 0.7343, "mean_iou": 0.7567, "mean_iou_std": 0.0, "fp_d": 0.1666, "params": "-", "kind": "pretrained"},
+    {"model": "DeepLabV3 fine-tuned", "val_iou": "0.8342 ± 0.0006", "pooled": 0.7801, "mean_iou": 0.7973, "mean_iou_std": 0.0017, "fp_d": 0.1306, "params": "42.00 M", "kind": "pretrained"}
+  ],
+  "paired": [
+    {"comparison": "augmented − baseline", "diff": 0.0271, "ci_low": 0.0086, "ci_high": 0.0446, "excludes_zero": true},
+    {"comparison": "advanced − augmented", "diff": 0.0088, "ci_low": -0.0023, "ci_high": 0.0199, "excludes_zero": false},
+    {"comparison": "strong_aug − augmented", "diff": -0.0005, "ci_low": -0.0148, "ci_high": 0.0135, "excludes_zero": false},
+    {"comparison": "resnet34 − strong_aug", "diff": 0.0736, "ci_low": 0.05, "ci_high": 0.0982, "excludes_zero": true},
+    {"comparison": "resnet34_distract − resnet34", "diff": 0.0008, "ci_low": -0.0109, "ci_high": 0.0137, "excludes_zero": false},
+    {"comparison": "deeplab_ft − resnet34", "diff": -0.0078, "ci_low": -0.0261, "ci_high": 0.0076, "excludes_zero": false}
+  ],
+  "robustness": {
+    "conditions": ["floor", "mirror", "cast", "detach", "animal", "dark"],
+    "plain_resnet34": [0.052, 0.6209, 0.0183, 0.0633, 0.0063, 0.0275],
+    "distractor_trained": [0.0025, 0.0714, 0.0143, 0.0485, 0.0049, 0.022],
+    "mean_plain": 0.1314,
+    "mean_distract": 0.0273
+  },
+  "eda": {
+    "foreground_fraction_note": "Foreground is a small fraction of every image, so pixel accuracy would be misleading; IoU is used.",
+    "fudan_iou_augmented": 0.7485,
+    "penn_iou_augmented": 0.6878,
+    "worst_image": "PennPed00042",
+    "worst_iou": 0.298
+  }
+}
