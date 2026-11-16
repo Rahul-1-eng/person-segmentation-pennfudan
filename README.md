@@ -6,7 +6,11 @@ Machine Learning course project, IIT Patna (Rahul Kumar Sahoo, 2401CS09).
 
 ## Demo video
 
-coming soon
+
+
+https://github.com/user-attachments/assets/3c1d3688-9b19-4cd0-9b3e-6ef0f9cbd5e1
+
+
 
 ## Screenshots
 
