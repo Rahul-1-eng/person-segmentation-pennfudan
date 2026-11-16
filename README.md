@@ -1,8 +1,37 @@
 # Binary Person Segmentation on Penn-Fudan
 
+Machine Learning course project, IIT Patna (Rahul Kumar Sahoo, 2401CS09).
+
 **Live project website:** https://segment-people--3wgr3i3g.preview.emergentagent.com/ — a hosted showcase site with a live segmentation demo (`backend/`, `frontend/`).
 
-**Final deliverables** are under `deliverables/`:
+## Demo video
+
+coming soon
+
+## Screenshots
+
+![Overview](docs/screenshots/Screenshot_2026-11-16_121957.png)
+![Live demo](docs/screenshots/Screenshot_2026-11-16_122019.png)
+![Method](docs/screenshots/Screenshot_2026-11-16_122028.png)
+![Results](docs/screenshots/Screenshot_2026-11-16_122040.png)
+![Robustness](docs/screenshots/Screenshot_2026-11-16_122047.png)
+![Findings](docs/screenshots/Screenshot_2026-11-16_122053.png)
+
+## Key results
+
+| Result | Value |
+|---|---|
+| Best mean per-image IoU (fine-tuned DeepLabV3) | 0.7973 |
+| Gain from ImageNet-pretrained encoder over from-scratch U-Net | +0.0736 |
+| Distractor false-positive rate, before to after distractor training | 0.1314 to 0.0273 |
+| Training runs | 27 runs (9 configurations x 3 seeds) |
+| Data | 170 images, frozen 102 / 34 / 34 split |
+
+The live demo runs the zero-shot DeepLabV3-ResNet50 reference model (COCO person class), which scored 0.7567 mean per-image IoU on Penn-Fudan.
+
+## Final deliverables
+
+Under `deliverables/`:
 
 - `report/` - camera-ready project report (PDF + editable DOCX), Appendix A holds the public code link
 - `poster/` - poster in three formats: editable PPTX, LaTeX source (+ compiled PDF) and high-resolution PNG
