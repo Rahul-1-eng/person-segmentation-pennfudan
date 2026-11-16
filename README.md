@@ -10,12 +10,12 @@ coming soon
 
 ## Screenshots
 
-![Overview](docs/screenshots/Screenshot 2026-11-16 121957.png)
-![Live demo](docs/screenshots/Screenshot 2026-11-16 122019.png)
-![Method](docs/screenshots/Screenshot 2026-11-16 122028.png)
-![Results](docs/screenshots/Screenshot 2026-11-16 122040.png)
-![Robustness](docs/screenshots/Screenshot 2026-11-16 122047.png)
-![Findings](docs/screenshots/Screenshot 2026-11-16 122053.png)
+![Overview](docs/screenshots/Screenshot_2026-11-16_121957.png)
+![Live demo](docs/screenshots/Screenshot_2026-11-16_122019.png)
+![Method](docs/screenshots/Screenshot_2026-11-16_122028.png)
+![Results](docs/screenshots/Screenshot_2026-11-16_122040.png)
+![Robustness](docs/screenshots/Screenshot_2026-11-16_122047.png)
+![Findings](docs/screenshots/Screenshot_2026-11-16_122053.png)
 
 ## Key results
 
